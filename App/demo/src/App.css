@@ -1,0 +1,127 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  height: 40px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
+  background: #1abc9c;
+  color: white;
+  text-align: left;
+}
+
+.App-title {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.App-footer {
+  padding: 10px;
+  text-align: center;
+  background: #ddd;
+}
+
+.rowdata {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.side {
+  flex:30;
+  background-color: #f1f1f1;
+  padding: 10px;
+  text-align: left;
+}
+
+.side .rowdata {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: white;
+  cursor: pointer;
+}
+
+.side .rowdata:hover {
+  background-color: #ddd;
+}
+
+.main {
+  display: flex;
+  flex-wrap: wrap;
+  flex:70;
+  background-color: white;
+  padding: 10px;
+}
+
+.main .rowdata {
+  background-color: #f1f1f1;
+}
+
+.mainSide {
+  width:30%;
+  padding: 5px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background-color: #f1f1f1;
+}
+
+.mainRow {
+  width:80%;
+  padding: 5px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background-color: #f1f1f1;
+}
+
+.iconWallet {
+  width: 40px;
+}
+
+.text-muted {
+  color: #777;
+}
+
+.form-group {
+  margin-bottom: 6px;
+}
+
+@media screen and (max-width: 700px) {
+  .rowdata, .navbar {
+    flex-direction: column;
+  }
+  .side .rowdata {
+    flex-direction: rowdata;
+  }
+  .mainrowdata, .mainSide {
+    width: 100%;
+    margin-left:0px;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .rowdata, .navbar {
+    flex-direction: column;
+  }
+  .side .rowdata {
+    flex-direction: row;
+  }
+  .mainRow, .mainSide {
+    width: 100%;
+    margin-left:0px;
+  }
+}
