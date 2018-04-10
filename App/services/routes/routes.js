@@ -22,13 +22,16 @@ var account
 var allEvents
 contract.deployed().then(function(deployed) {
   metaContract = deployed
+  console.log('metaContract', metaContract)
 
   allEvents = metaContract.allEvents(function(error, result){
     if (!error)
     {
-      console.log(result);
       console.log('args', result.args);
       console.log('args.object', result.args._sender);
+    }
+    else {
+      console.log('error events', error)
     }
   })
   metaContract.contract._eth.getAccounts(function (error, accounts) {
@@ -69,6 +72,7 @@ var appRouter = function (app) {
   });
 
   app.get("/buyticket" , async function (req, res) {
+    console.log('buyticket')
     let response = await metaContract.buyTickets(1, {from: '0x3624b38030ba311b70113cca46c4d37994b21cfc', value: 1})
     console.log('response', response)
 
