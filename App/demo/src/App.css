@@ -92,6 +92,11 @@
   width: 40px;
 }
 
+.iconTicket {
+  width: 30px;
+  margin-left: 5px;
+}
+
 .text-muted {
   color: #777;
 }

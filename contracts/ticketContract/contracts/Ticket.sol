@@ -16,12 +16,16 @@ contract Ticket {
     return tickets;
   }
 
+  function getTickets() public view returns (uint) {
+    return purchasers[msg.sender];
+  }
+
   function buyTickets(uint amount) public payable {
-    emit BuyTickets(msg.sender, owner, msg.value, amount);
-    require(msg.value != (amount * price) || amount > tickets);
+    require(msg.value == (amount * price) && amount <= tickets);
 
     purchasers[msg.sender] += amount;
     tickets -= amount;
-    msg.sender.transfer(msg.value);
+    owner.transfer(amount * price);
   }
+
 }

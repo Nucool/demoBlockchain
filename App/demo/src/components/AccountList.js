@@ -14,6 +14,8 @@ const AccountItem = (props) => {
           <span style={{fontSize: '0.7em'}}>ETH</span>
         </div>
         <div className="text-muted" style={{fontSize: '0.9em'}} >{account.address.toLowerCase()}</div>
+        <div className="text-muted" style={{fontSize: '0.9em'}} >{account.ownerTicket} Ticket(s)
+        </div>
       </div>
     </div>
   );

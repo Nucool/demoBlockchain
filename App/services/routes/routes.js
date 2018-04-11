@@ -48,7 +48,13 @@ const getAccountBalance = async () => {
   for (let index in accounts) {
     let account = accounts[index]
     let balance = await web3.eth.getBalance(account)
-    accountBalance.push({name:'account ' + (parseInt(index)+1), address: account, eth: web3.utils.fromWei(balance) })
+    let ownerTicket = await metaContract.getTickets.call({from: account})
+    accountBalance.push({
+      name:'account ' + (parseInt(index)+1),
+      address: account,
+      eth: web3.utils.fromWei(balance),
+      ownerTicket: ownerTicket
+    })
   }
   return accountBalance;
 }
@@ -66,21 +72,10 @@ var appRouter = function (app) {
       web3.eth.sendTransaction({from: req.body.from, to: req.body.to, value: web3.utils.toWei(req.body.eth, 'ether')})
       .then((response) => {
         console.log('sent transaction', response)
+        res.status(200).send(req.body);
       })
     })
-    res.status(200).send(req.body);
   });
-
-  app.get("/buyticket" , async function (req, res) {
-    console.log('buyticket')
-    let response = await metaContract.buyTickets(1, {from: '0x3624b38030ba311b70113cca46c4d37994b21cfc', value: 1})
-    console.log('response', response)
-
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
 
   app.get("/ticket", async function (req, res) {
     let ticketTotal = await metaContract.getTicketsTotal.call({from: account})
@@ -92,6 +87,42 @@ var appRouter = function (app) {
 
     res.status(200).send(data);
   })
+
+  app.get("/ticket/:account", async function (req, res) {
+    let account = req.params.account
+    let ownerTicket = await metaContract.getTickets.call({from: account})
+    let data = ({
+      ownerTicket: ownerTicket
+    });
+
+    res.status(200).send(data);
+  })
+
+  app.get("/buyticket" , async function (req, res) {
+    console.log('buyticket')
+    let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
+    console.log('response', response)
+
+    let data = ({
+      ticketTotal: true
+    });
+    res.status(200).send(data);
+  })
+
+  app.post("/ticket/buy" , async function (req, res) {
+    let amount = req.body.amount
+    let buyer = req.body.buyer
+
+    console.log('buyticket')
+    let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
+    console.log('response', response)
+
+    let data = ({
+      ticketTotal: true
+    });
+    res.status(200).send(data);
+  })
+
 }
 
 module.exports = appRouter;
