@@ -77,6 +77,12 @@ var appRouter = function (app) {
     })
   });
 
+  app.post("/account/create", async function (req, res) {
+    await ethPersonal.newAccount('11111111')
+    let data = await getAccountBalance()
+    res.status(200).send(data);
+  })
+
   app.get("/ticket", async function (req, res) {
     let ticketTotal = await metaContract.getTicketsTotal.call({from: account})
     console.log('await', ticketTotal)

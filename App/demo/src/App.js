@@ -23,7 +23,8 @@ class App extends Component {
       buyTicket: {
         ownerTicket: 0,
         buyer: '',
-        amount: 0
+        amount: 0,
+        isSending: false
       }
     }
     this.handleSelectAccount = this.handleSelectAccount.bind(this)
@@ -33,14 +34,15 @@ class App extends Component {
     this.handleInputAmountBuyTicketChange = this.handleInputAmountBuyTicketChange.bind(this)
     this.handleBuyTicket = this.handleBuyTicket.bind(this)
     this.handleIsSendingTransfer = this.handleIsSendingTransfer.bind(this)
+    this.handleIsSendingBuyTicket = this.handleIsSendingBuyTicket.bind(this)
+    this.handleCreateAccount = this.handleCreateAccount.bind(this)
   }
 
   fetchData(sendTransaction) {
     axios.get(`${apiDomain}/account`)
     .then(response => {
       let accounts = response.data
-      axios.get(`${apiDomain}/ticket`).
-      then(response => {
+      axios.get(`${apiDomain}/ticket`).then(response => {
         let ticketTotal = response.data.ticketTotal
         this.setState({
           accounts: accounts,
@@ -96,6 +98,14 @@ class App extends Component {
     })
   }
 
+  handleIsSendingBuyTicket(isSending) {
+    this.setState({
+      buyTicket: Object.assign({}, this.state.buyTicket, {
+        isSending: isSending
+      })
+    })
+  }
+
   handleInputETHTransferChange(e) {
     this.setState({
       sendTransaction: Object.assign({}, this.state.sendTransaction, {
@@ -125,9 +135,20 @@ class App extends Component {
 
   handleBuyTicket(data) {
     console.log('handleBuyTicket', data)
+    this.handleIsSendingBuyTicket(true);
     axios.post(`${apiDomain}/ticket/buy`, data)
     .then(response => {
       console.log('response',response)
+      this.handleIsSendingBuyTicket(false);
+      this.fetchData(this.state.sendTransaction)
+    })
+  }
+
+  handleCreateAccount(){
+    axios.post(`${apiDomain}/account/create`)
+    .then(response => {
+      console.log('response',response)
+      this.fetchData(this.state.sendTransaction)
     })
   }
 
@@ -135,39 +156,48 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <div className="App-title">Demo Wallet</div>
-        </header>
-        <div className="rowdata">
-          <AccountList
-            accounts={this.state.accounts}
-            onSelectAccount={this.handleSelectAccount} />
-
-          <div className="main">
-            <AccountTransfer
-              account={this.state.accountTransfer}
-              sendTransaction={this.state.sendTransaction}
-              onHandleInputETHTransferChange={this.handleInputETHTransferChange}
-              onHandleInputAddressTransferChange={this.handleInputAddressTransferChange}
-              onHandleTransferETH={this.handleTransferETH} />
-
-            {
-              this.state.accountTransfer !== null ?
-              <Ticket
-                ticketRemain={this.state.ticketRemain}
-                account={this.state.sendTransaction}
-                buyTicket={this.state.buyTicket}
-                onHandleInputAmountBuyTicketChange={this.handleInputAmountBuyTicketChange}
-                onHandleBuyTicket={this.handleBuyTicket} /> : null
-              }
-
+          <div className="App-title">
+            Demo Wallet
+            <button type="button" className="btn btn-primary" style={{marginLeft:'15px'}}
+              onClick={()=>{this.handleCreateAccount()}}
+              >
+              <span className="glyphicon glyphicon-plus-sign"></span> Create Account
+              </button>
             </div>
-          </div>
-          <footer className="App-footer text-muted">
-            &copy; nopadon
-          </footer>
-        </div>
-      );
-    }
-  }
+          </header>
+          <div className="rowdata">
+            <AccountList
+              accounts={this.state.accounts}
+              onSelectAccount={this.handleSelectAccount} />
 
-  export default App;
+            <div className="main">
+              <AccountTransfer
+                account={this.state.accountTransfer}
+                accounts={this.state.accounts}
+                sendTransaction={this.state.sendTransaction}
+                onHandleInputETHTransferChange={this.handleInputETHTransferChange}
+                onHandleInputAddressTransferChange={this.handleInputAddressTransferChange}
+                onHandleTransferETH={this.handleTransferETH} />
+
+              {
+                this.state.accountTransfer !== null ?
+                <Ticket
+                  ticketRemain={this.state.ticketRemain}
+                  account={this.state.sendTransaction}
+                  buyTicket={this.state.buyTicket}
+                  onHandleInputAmountBuyTicketChange={this.handleInputAmountBuyTicketChange}
+                  onHandleBuyTicket={this.handleBuyTicket}
+                  /> : null
+                }
+
+              </div>
+            </div>
+            <footer className="App-footer text-muted">
+              &copy; nopadon
+            </footer>
+          </div>
+        );
+      }
+    }
+
+    export default App;

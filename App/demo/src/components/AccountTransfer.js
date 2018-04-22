@@ -1,8 +1,7 @@
 import React from 'react'
 
 const AccountTransfer = (props) => {
-  const { account, sendTransaction } = props
-  console.log('AccountTransfer', account)
+  const { account, accounts, sendTransaction } = props
 
   if(account === null){
     return (
@@ -35,12 +34,25 @@ const AccountTransfer = (props) => {
             </div>
           </div>
           <div className="form-group">
+            <label className="control-label col-sm-3" >Recipient Account :</label>
+            <div className="col-sm-9">
+              <select className="form-control"
+                disabled={sendTransaction.isSending}
+                value={sendTransaction.to}
+                onChange={props.onHandleInputAddressTransferChange}>
+                <option value="" >Recipient Account</option>
+                { accounts.map(item => <option key={item.address} value={item.address}>{item.name}</option> )}
+              </select>
+
+            </div>
+          </div>
+          <div className="form-group">
             <label className="control-label col-sm-3" >Recipient Address :</label>
             <div className="col-sm-9">
               <input type="text" className="form-control" placeholder="Recipient Address"
-                disabled={sendTransaction.isSending}
-                value={sendTransaction.to}
-                onChange={props.onHandleInputAddressTransferChange} />
+                disabled={true}
+                value={sendTransaction.to.toLowerCase()} />
+
             </div>
           </div>
           <div className="form-group">
@@ -59,7 +71,7 @@ const AccountTransfer = (props) => {
                 disabled={sendTransaction.isSending}
                 onClick={() => { props.onHandleTransferETH(sendTransaction) }}
                 >
-                { sendTransaction.isSending ? 'Pending' : 'Transfer' }
+                { sendTransaction.isSending ? 'Pending...' : 'Transfer' }
               </button>
             </div>
           </div>
