@@ -1,12 +1,15 @@
 const Web3 = require('web3')
 const contracttruff = require('truffle-contract')
 const ticket_artifacts = require('../../../contracts/ticketContract/build/contracts/Ticket.json')
+const ticketBS_artifacts = require('../../../contracts/ticketBSContract/build/contracts/TicketFactory.json')
 
 
 let web3 = new Web3()
 web3.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 var contract = contracttruff(ticket_artifacts);
+var contractTicket = contracttruff(ticketBS_artifacts);
+
 contract.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 if (typeof contract.currentProvider.sendAsync !== "function") {
   contract.currentProvider.sendAsync = function() {
@@ -16,13 +19,22 @@ if (typeof contract.currentProvider.sendAsync !== "function") {
   };
 }
 
+contractTicket.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
+if (typeof contractTicket.currentProvider.sendAsync !== "function") {
+  contractTicket.currentProvider.sendAsync = function() {
+    return contractTicket.currentProvider.send.apply(
+      contractTicket.currentProvider, arguments
+    );
+  };
+}
+
 
 var metaContract
 var account
 var allEvents
+var metaTicketContract;
 contract.deployed().then(function(deployed) {
   metaContract = deployed
-  console.log('metaContract', metaContract)
 
   allEvents = metaContract.allEvents(function(error, result){
     if (!error)
@@ -39,6 +51,12 @@ contract.deployed().then(function(deployed) {
     console.log('account', account)
   })
 })
+
+contractTicket.deployed().then(function(deployed) {
+  console.log('contractTicket')
+  metaTicketContract = deployed;
+})
+
 
 const ethPersonal = web3.eth.personal
 
@@ -129,6 +147,17 @@ var appRouter = function (app) {
     res.status(200).send(data);
   })
 
+
+  app.get("/ownTicket", async function (req, res) {
+    console.log('buyticket')
+    let response = await metaTicketContract.getTicketsByOwner.call('0x9e5a88aad31773af2ca39136135ee155a2394461');
+    console.log('response', response)
+
+    let data = ({
+      ticketTotal: true
+    });
+    res.status(200).send(data);
+  })
 }
 
 module.exports = appRouter;
