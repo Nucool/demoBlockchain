@@ -5,7 +5,7 @@ import "./SafeMath.sol";
 
 
 contract MemberInterface {
-  function getMember(address _address) view public returns (string, string);
+  function getMemberInternal(address _address) external view returns (string name, string telephone);
 }
 
 contract TicketFactory is Ownable {
@@ -43,20 +43,20 @@ contract TicketFactory is Ownable {
     }
   }
 
-  function _setPriceTicketByOwner(address _owner, uint price) private {
+  function _setPriceTicketByOwner(address _owner, uint _price) private {
     for (uint i = 0; i < tickets.length; i++) {
       if (ticketToOwner[i] == _owner) {
-        tickets[i].price = price;
+        tickets[i].price = _price;
       }
     }
   }
 
-  function setPriceTicketsByOwner(uint price) public onlyOwner {
-    require(price > 0);
-    _setPriceTicketByOwner(msg.sender, price);
+  function setPriceTicketsByOwner(uint _price) public {
+    require(_price > 0);
+    _setPriceTicketByOwner(msg.sender, _price);
   }
 
-  function getTicketsByOwner(address _owner) view returns(uint[] prices, string ownerName, string ownerTelephone) {
+  function getTicketsByOwner(address _owner) view returns(uint[] prices,uint totalTicket, string ownerName, string ownerTelephone) {
     uint[] memory result = new uint[](ownerTicketCount[_owner]);
     uint counter = 0;
     for (uint i = 0; i < tickets.length; i++) {
@@ -65,7 +65,40 @@ contract TicketFactory is Ownable {
         counter++;
       }
     }
-    return (result, "", "");
+
+    string memberName;
+    (memberName, ) = memberContract.getMemberInternal(_owner);
+    return (result, ownerTicketCount[_owner], "", "");
+  }
+
+  function _buyTicket(address _ownerTicket, address _newOwnerTicket, uint _amount) private {
+    uint price;
+    uint counter = 0;
+    for (uint i = 0; i < tickets.length; i++) {
+      if (ticketToOwner[i] == _ownerTicket && counter < _amount) {
+        ticketToOwner[i] = _newOwnerTicket;
+        price = tickets[i].price;
+        counter++;
+      }
+    }
+
+    ownerTicketCount[_ownerTicket] = ownerTicketCount[_ownerTicket].sub(_amount);
+    ownerTicketCount[_newOwnerTicket] = ownerTicketCount[_newOwnerTicket].add(_amount);
+    _ownerTicket.transfer(_amount * price);
+  }
+
+  function buyTicket(address _ownerTicket, uint _amount) public payable {
+    uint[] memory prices = new uint[](ownerTicketCount[_ownerTicket]);
+    uint totalTicket;
+    (prices,totalTicket,,) = getTicketsByOwner(_ownerTicket);
+    require(totalTicket > 0);
+
+    return _buyTicket(_ownerTicket, msg.sender, _amount);
+  }
+
+
+  function setMemberContractAddress(address _address) public {
+    memberContract = MemberInterface(_address);
   }
 
 }

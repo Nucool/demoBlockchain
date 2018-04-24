@@ -41,7 +41,7 @@ const AccountTransfer = (props) => {
                 value={sendTransaction.to}
                 onChange={props.onHandleInputAddressTransferChange}>
                 <option value="" >Recipient Account</option>
-                { accounts.map(item => <option key={item.address} value={item.address}>{item.name}</option> )}
+                { accounts.map(item => <option key={item.address} value={item.address.toLowerCase()}>{item.name}</option> )}
               </select>
 
             </div>

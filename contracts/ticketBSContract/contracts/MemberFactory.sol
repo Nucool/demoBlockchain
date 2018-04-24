@@ -12,21 +12,25 @@ contract MemberFactory {
   mapping (address => Member) members;
   address[] public memberAccounts;
 
-  function _createMember(string _name, string _telephone) internal {
-    Member storage member = members[msg.sender];
+  function _createMember(string _name, string _telephone, address _address) internal {
+    Member storage member = members[_address];
     member.name = _name;
     member.telephone = _telephone;
-    memberAccounts.push(msg.sender);
+    memberAccounts.push(_address);
     emit NewMember(_name, _telephone);
   }
 
-  function getMember(address _address) view public returns (string, string) {
+  function getMember(address _address) view public returns (string name, string telephone) {
     return (members[_address].name, members[_address].telephone);
   }
 
-  function createMember(string _name, string _telephone) public {
-    require(memberAccounts[uint(msg.sender)] != msg.sender);
-    _createMember(_name, _telephone);
+  function getMemberInternal(address _address) external view returns (string name, string telephone) {
+    Member memory member = members[_address];
+    return (member.name, member.telephone);
+  }
+
+  function createMember(string _name, string _telephone, address _address) public {
+    _createMember(_name, _telephone, _address);
   }
 
 }

@@ -1,6 +1,7 @@
 const Web3 = require('web3')
 const contracttruff = require('truffle-contract')
 const ticket_artifacts = require('../../../contracts/ticketContract/build/contracts/Ticket.json')
+const member_artifacts = require('../../../contracts/ticketBSContract/build/contracts/MemberFactory.json')
 const ticketBS_artifacts = require('../../../contracts/ticketBSContract/build/contracts/TicketFactory.json')
 
 
@@ -9,6 +10,7 @@ web3.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 var contract = contracttruff(ticket_artifacts);
 var contractTicket = contracttruff(ticketBS_artifacts);
+var contractMember = contracttruff(member_artifacts);
 
 contract.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 if (typeof contract.currentProvider.sendAsync !== "function") {
@@ -28,76 +30,127 @@ if (typeof contractTicket.currentProvider.sendAsync !== "function") {
   };
 }
 
+contractMember.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
+if (typeof contractMember.currentProvider.sendAsync !== "function") {
+  contractMember.currentProvider.sendAsync = function() {
+    return contractMember.currentProvider.send.apply(
+      contractMember.currentProvider, arguments
+    );
+  };
+}
 
-var metaContract
+
 var account
 var allEvents
-var metaTicketContract;
-contract.deployed().then(function(deployed) {
-  metaContract = deployed
+var metaContract, metaMemberContract, metaTicketContract;
+var accTestRPCAdmin = '';
+/*contract.deployed().then(function(deployed) {
+metaContract = deployed
 
-  allEvents = metaContract.allEvents(function(error, result){
-    if (!error)
-    {
-      console.log('args', result.args);
-      console.log('args.object', result.args._sender);
-    }
-    else {
-      console.log('error events', error)
-    }
-  })
-  metaContract.contract._eth.getAccounts(function (error, accounts) {
-    account = accounts[0]
-    console.log('account', account)
+allEvents = metaContract.allEvents(function(error, result){
+if (!error)
+{
+console.log('args', result.args);
+console.log('args.object', result.args._sender);
+}
+else {
+console.log('error events', error)
+}
+})
+metaContract.contract._eth.getAccounts(function (error, accounts) {
+account = accounts[0]
+console.log('account', account)
+})
+})*/
+
+contractMember.deployed().then(async function(deployed) {
+  console.log('contractMember')
+  metaMemberContract = deployed;
+
+  let accTestRPC = await web3.eth.getAccounts()
+  accTestRPCAdmin = accTestRPC[0]
+
+  contractTicket.deployed().then(function(deployed) {
+    console.log('contractTicket')
+    metaTicketContract = deployed;
+    metaTicketContract.setMemberContractAddress(metaTicketContract.address, { from: accTestRPCAdmin })
   })
 })
 
-contractTicket.deployed().then(function(deployed) {
-  console.log('contractTicket')
-  metaTicketContract = deployed;
-})
 
 
 const ethPersonal = web3.eth.personal
 
 const getAccountBalance = async () => {
   let accountBalance = []
-  let accounts = await ethPersonal.getAccounts()
+  let accounts = []
+
+  /// start env TestRPC
+  accounts.push(accTestRPCAdmin)
+  /// end env TestRPC
+
+  let accountsPivate = await ethPersonal.getAccounts()
+  for (let index in accountsPivate) {
+    accounts.push(accountsPivate[index])
+  }
+
   for (let index in accounts) {
     let account = accounts[index]
     let balance = await web3.eth.getBalance(account)
-    let ownerTicket = await metaContract.getTickets.call({from: account})
+    let memberInfo = await metaMemberContract.getMember.call(account)
+    let ownerTicket = 0//await metaContract.getTickets.call({from: account})
     accountBalance.push({
-      name:'account ' + (parseInt(index)+1),
+      name: (parseInt(index)+1) + ' ' + memberInfo[0],//'account ' + (parseInt(index)+1),
+      telephone: memberInfo[1],
       address: account,
       eth: web3.utils.fromWei(balance),
       ownerTicket: ownerTicket
     })
   }
-  return accountBalance;
+  return accountBalance
+}
+
+const unlockAccount = async (address) => {
+    await ethPersonal.unlockAccount(address, "11111111", 600)
 }
 
 var appRouter = function (app) {
   app.get("/account", async function (req, res) {
     let data = await getAccountBalance()
-    res.status(200).send(data);
+    res.status(200).send(data)
   });
 
   app.post("/account/transfer", async function (req, res) {
     console.log(req.body)
-    ethPersonal.unlockAccount(req.body.from, "11111111", 600).then((response) => {
-      console.log('response', response)
-      web3.eth.sendTransaction({from: req.body.from, to: req.body.to, value: web3.utils.toWei(req.body.eth, 'ether')})
-      .then((response) => {
-        console.log('sent transaction', response)
-        res.status(200).send(req.body);
-      })
+    if(req.body.from !== accTestRPCAdmin){
+      await unlockAccount(req.body.from)
+    }
+
+    web3.eth.sendTransaction({from: req.body.from, to: req.body.to, value: web3.utils.toWei(req.body.eth, 'ether')})
+    .then((response) => {
+      console.log('sent transaction', response)
+      res.status(200).send(req.body);
     })
   });
 
   app.post("/account/create", async function (req, res) {
-    await ethPersonal.newAccount('11111111')
+    let newAccount = await ethPersonal.newAccount('11111111')
+    await unlockAccount(newAccount);
+    let ticketTotal = await metaMemberContract.createMember('nameTest', '08xxxx', newAccount, {from: accTestRPCAdmin, gas:3000000 })
+    console.log('newAccount', newAccount)
+
     let data = await getAccountBalance()
+    res.status(200).send(data);
+  })
+
+  app.get("/account/:account", async function (req, res) {
+    let account = req.params.account
+    let memberInfo = await metaMemberContract.getMember.call(account, {from: account})
+
+    let data = ({
+      member: memberInfo
+    });
+
     res.status(200).send(data);
   })
 
@@ -112,52 +165,79 @@ var appRouter = function (app) {
     res.status(200).send(data);
   })
 
-  app.get("/ticket/:account", async function (req, res) {
-    let account = req.params.account
-    let ownerTicket = await metaContract.getTickets.call({from: account})
-    let data = ({
-      ownerTicket: ownerTicket
-    });
+  /*app.get("/ticket/:account", async function (req, res) {
+  let account = req.params.account
+  let ownerTicket = await metaContract.getTickets.call({from: account})
+  let data = ({
+  ownerTicket: ownerTicket
+});
 
-    res.status(200).send(data);
-  })
+res.status(200).send(data);
+})*/
 
-  app.get("/buyticket" , async function (req, res) {
-    console.log('buyticket')
-    let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
-    console.log('response', response)
+app.get("/buyticket" , async function (req, res) {
+  console.log('buyticket')
+  let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
+  console.log('response', response)
 
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
+  let data = ({
+    ticketTotal: true
+  });
+  res.status(200).send(data);
+})
 
-  app.post("/ticket/buy" , async function (req, res) {
-    let amount = req.body.amount
-    let buyer = req.body.buyer
+app.post("/ticket/buy" , async function (req, res) {
+  let amount = req.body.amount
+  let buyer = req.body.buyer
 
-    console.log('buyticket')
-    let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
-    console.log('response', response)
+  console.log('buyticket')
+  let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
+  console.log('response', response)
 
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
+  let data = ({
+    ticketTotal: true
+  });
+  res.status(200).send(data);
+})
 
 
-  app.get("/ownTicket", async function (req, res) {
-    console.log('buyticket')
-    let response = await metaTicketContract.getTicketsByOwner.call('0x9e5a88aad31773af2ca39136135ee155a2394461');
-    console.log('response', response)
+app.get("/ticket/:account", async function (req, res) {
+  console.log('buyticket')
+  let account = req.params.account
+  let response = await metaTicketContract.getTicketsByOwner.call(account, {from: account, gas:3000000});
+  console.log('response', response)
+  console.log('data', response[0][0]);
 
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
+  let data = ({
+    ownerTicket: response[1],
+    prices: response[0],
+    totalTicket: response[1],
+    ownerName: response[2],
+    ownerTelephone: response[3]
+  });
+  res.status(200).send(data);
+})
+
+app.get("/setTicket/:account", async function (req, res) {
+  console.log('setTicket')
+  let account = req.params.account
+  let response = await metaTicketContract.setPriceTicketsByOwner(2, {from: account, gas:3000000});
+
+  let data = ({
+    success: true
+  });
+  res.status(200).send(data);
+})
+
+app.get("/buyTicketFactory", async function (req, res) {
+  let response = await metaTicketContract.buyTicket('0xd32007f413c51ac3b89174e891fbf82a1f4fbeb5', 2,
+  {from: '0x678a3318ad85eca4fd82135312a45c81fd69cfa7', value: web3.utils.toWei('2', 'ether'), gas:3000000});
+
+  let data = ({
+    success: true
+  });
+  res.status(200).send(data);
+})
 }
 
 module.exports = appRouter;

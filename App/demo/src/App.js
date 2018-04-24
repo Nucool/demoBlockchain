@@ -42,7 +42,10 @@ class App extends Component {
     axios.get(`${apiDomain}/account`)
     .then(response => {
       let accounts = response.data
-      axios.get(`${apiDomain}/ticket`).then(response => {
+      this.setState({
+        accounts: accounts,
+      });
+      /*axios.get(`${apiDomain}/ticket`).then(response => {
         let ticketTotal = response.data.ticketTotal
         this.setState({
           accounts: accounts,
@@ -53,7 +56,7 @@ class App extends Component {
             isSending: false
           }),
         })
-      })
+      })*/
     })
   }
 
