@@ -25,7 +25,7 @@ const AccountList = (props) => {
   const { accounts } = props
   return (
     <div className="side">
-      { accounts.map(item => <AccountItem key={item.name} account={item} {...props} />) }
+      { accounts.map(item => <AccountItem key={item.address} account={item} {...props} />) }
     </div>
   )
 }

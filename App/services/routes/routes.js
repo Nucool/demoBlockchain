@@ -4,6 +4,8 @@ const ticket_artifacts = require('../../../contracts/ticketContract/build/contra
 const member_artifacts = require('../../../contracts/ticketBSContract/build/contracts/MemberFactory.json')
 const ticketBS_artifacts = require('../../../contracts/ticketBSContract/build/contracts/TicketFactory.json')
 
+const isTestRPC = true;
+
 
 let web3 = new Web3()
 web3.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
@@ -63,6 +65,7 @@ console.log('account', account)
 })
 })*/
 
+console.log('contractMember', contractMember)
 contractMember.deployed().then(async function(deployed) {
   console.log('contractMember')
   metaMemberContract = deployed;
@@ -70,6 +73,9 @@ contractMember.deployed().then(async function(deployed) {
   let accTestRPC = await web3.eth.getAccounts()
   console.log('accTestRPC',accTestRPC)
   accTestRPCAdmin = accTestRPC[0]
+  if(!isTestRPC){
+    await unlockAccount(accTestRPCAdmin)
+  }
 
   contractTicket.deployed().then(function(deployed) {
     metaTicketContract = deployed;
@@ -87,11 +93,15 @@ const getAccountBalance = async () => {
   let accounts = []
 
   /// start env TestRPC
-  accounts.push(accTestRPCAdmin)
+  if(isTestRPC) {
+    accounts.push(accTestRPCAdmin)
+  }
   /// end env TestRPC
 
   let accountsPivate = await ethPersonal.getAccounts()
   for (let index in accountsPivate) {
+    console.log('acc', accountsPivate[index])
+    unlockAccount(accountsPivate[index])
     accounts.push(accountsPivate[index])
   }
 
@@ -101,7 +111,7 @@ const getAccountBalance = async () => {
     let memberInfo = await metaMemberContract.getMember.call(account)
     let ownerTicket = await metaTicketContract.getTicketsByOwner.call(account, {from: account, gas:3000000});
     accountBalance.push({
-      name: memberInfo[0],//'account ' + (parseInt(index)+1),
+      name: (memberInfo[0] === '' && isTestRPC ? 'Admin' : memberInfo[0]),//'account ' + (parseInt(index)+1),
       telephone: memberInfo[1],
       address: account,
       eth: web3.utils.fromWei(balance),
@@ -113,7 +123,8 @@ const getAccountBalance = async () => {
 }
 
 const unlockAccount = async (address) => {
-  await ethPersonal.unlockAccount(address, "11111111", 600)
+  let responseUnlock = await ethPersonal.unlockAccount(address, "11111111", 600)
+  console.log('responseUnlock', responseUnlock)
 }
 
 var appRouter = function (app) {
@@ -169,16 +180,6 @@ var appRouter = function (app) {
     res.status(200).send(data);
   })
 
-  /*app.get("/ticket/:account", async function (req, res) {
-  let account = req.params.account
-  let ownerTicket = await metaContract.getTickets.call({from: account})
-  let data = ({
-  ownerTicket: ownerTicket
-  });
-
-  res.status(200).send(data);
-  })*/
-
   app.get("/buyticket" , async function (req, res) {
     console.log('buyticket')
     let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
@@ -213,7 +214,7 @@ var appRouter = function (app) {
     console.log('data', response[0][0]);
 
     let data = ({
-      prices: response[0],
+      price: response[0],
       ownerTicket: response[1],
       ownerName: response[2],
       ownerTelephone: response[3]
@@ -221,26 +222,35 @@ var appRouter = function (app) {
     res.status(200).send(data);
   })
 
-  app.get("/setTicket/:account", async function (req, res) {
+  app.post("/setPriceTicket" , async function (req, res) {
+    let price = req.body.price
+    let account = req.body.account
+
     console.log('setTicket')
-    let account = req.params.account
-    let response = await metaTicketContract.setPriceTicketsByOwner(2, {from: account, gas:3000000});
+    let response = await metaTicketContract.setPriceTicketsByOwner(price, {from: account, gas:3000000});
+    console.log('response', response)
 
     let data = ({
-      success: true
+      ticketTotal: true
     });
     res.status(200).send(data);
   })
 
-  app.get("/buyTicketFactory", async function (req, res) {
-    let response = await metaTicketContract.buyTicket('0xd32007f413c51ac3b89174e891fbf82a1f4fbeb5', 2,
-    {from: '0x678a3318ad85eca4fd82135312a45c81fd69cfa7', value: web3.utils.toWei('2', 'ether'), gas:3000000});
+  app.post("/buyTicketFactory", async function (req, res) {
 
-    let data = ({
-      success: true
-    });
-    res.status(200).send(data);
-  })
-}
+    let seller = req.body.seller
+    let buyer = req.body.buyer
+    let total = req.body.total
+    let price = req.body.price
+    let priceTotal = total * price
+    let response = await metaTicketContract.buyTicket(seller, total,
+      {from: buyer, value: web3.utils.toWei(priceTotal.toString(), 'ether'), gas:3000000});
 
-module.exports = appRouter;
+      let data = ({
+        success: true
+      });
+      res.status(200).send(data);
+    })
+  }
+
+  module.exports = appRouter;

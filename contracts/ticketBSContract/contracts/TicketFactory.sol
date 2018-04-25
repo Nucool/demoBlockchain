@@ -13,6 +13,7 @@ contract TicketFactory is Ownable {
 
   MemberInterface memberContract;
 
+  uint constant internalPrice = 1 ether;
   string public symbol;
   string public name;
   uint8 public decimals;
@@ -84,7 +85,7 @@ contract TicketFactory is Ownable {
 
     ownerTicketCount[_ownerTicket] = ownerTicketCount[_ownerTicket].sub(_amount);
     ownerTicketCount[_newOwnerTicket] = ownerTicketCount[_newOwnerTicket].add(_amount);
-    _ownerTicket.transfer(_amount * price);
+    _ownerTicket.transfer(msg.value);
   }
 
   function buyTicket(address _ownerTicket, uint _amount) public payable {

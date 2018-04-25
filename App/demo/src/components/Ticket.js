@@ -28,6 +28,7 @@ const Ticket = (props) => {
             <div className="col-sm-3" ></div>
             <div className="col-sm-9" style={{textAlign:'left'}}>
               <button type="button" className="btn btn-default btn-success"
+                disabled={buyTicket.isSending}
                 onClick={() => { props.onHandleBuyTicket(buyTicket) }}
                 >
                 { buyTicket.isSending ? 'Pending...' : 'Buy ticket' }
