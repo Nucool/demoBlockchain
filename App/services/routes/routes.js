@@ -68,12 +68,13 @@ contractMember.deployed().then(async function(deployed) {
   metaMemberContract = deployed;
 
   let accTestRPC = await web3.eth.getAccounts()
+  console.log('accTestRPC',accTestRPC)
   accTestRPCAdmin = accTestRPC[0]
 
   contractTicket.deployed().then(function(deployed) {
-    console.log('contractTicket')
     metaTicketContract = deployed;
-    metaTicketContract.setMemberContractAddress(metaTicketContract.address, { from: accTestRPCAdmin })
+    console.log('contractTicket', metaTicketContract.address)
+    metaTicketContract.setMemberContractAddress(metaMemberContract.address, { from: accTestRPCAdmin })
   })
 })
 
@@ -98,20 +99,21 @@ const getAccountBalance = async () => {
     let account = accounts[index]
     let balance = await web3.eth.getBalance(account)
     let memberInfo = await metaMemberContract.getMember.call(account)
-    let ownerTicket = 0//await metaContract.getTickets.call({from: account})
+    let ownerTicket = await metaTicketContract.getTicketsByOwner.call(account, {from: account, gas:3000000});
     accountBalance.push({
-      name: (parseInt(index)+1) + ' ' + memberInfo[0],//'account ' + (parseInt(index)+1),
+      name: memberInfo[0],//'account ' + (parseInt(index)+1),
       telephone: memberInfo[1],
       address: account,
       eth: web3.utils.fromWei(balance),
-      ownerTicket: ownerTicket
+      ownerTicket: ownerTicket[1],
+      ownerTicketPrice: ownerTicket[0]
     })
   }
   return accountBalance
 }
 
 const unlockAccount = async (address) => {
-    await ethPersonal.unlockAccount(address, "11111111", 600)
+  await ethPersonal.unlockAccount(address, "11111111", 600)
 }
 
 var appRouter = function (app) {
@@ -135,8 +137,10 @@ var appRouter = function (app) {
 
   app.post("/account/create", async function (req, res) {
     let newAccount = await ethPersonal.newAccount('11111111')
+    let name = req.body.name
+    let telephone = req.body.telephone
     await unlockAccount(newAccount);
-    let ticketTotal = await metaMemberContract.createMember('nameTest', '08xxxx', newAccount, {from: accTestRPCAdmin, gas:3000000 })
+    let response = await metaMemberContract.createMember(name, telephone, newAccount, {from: accTestRPCAdmin, gas:3000000 })
     console.log('newAccount', newAccount)
 
     let data = await getAccountBalance()
@@ -170,74 +174,73 @@ var appRouter = function (app) {
   let ownerTicket = await metaContract.getTickets.call({from: account})
   let data = ({
   ownerTicket: ownerTicket
-});
-
-res.status(200).send(data);
-})*/
-
-app.get("/buyticket" , async function (req, res) {
-  console.log('buyticket')
-  let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
-  console.log('response', response)
-
-  let data = ({
-    ticketTotal: true
   });
+
   res.status(200).send(data);
-})
+  })*/
 
-app.post("/ticket/buy" , async function (req, res) {
-  let amount = req.body.amount
-  let buyer = req.body.buyer
+  app.get("/buyticket" , async function (req, res) {
+    console.log('buyticket')
+    let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
+    console.log('response', response)
 
-  console.log('buyticket')
-  let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
-  console.log('response', response)
+    let data = ({
+      ticketTotal: true
+    });
+    res.status(200).send(data);
+  })
 
-  let data = ({
-    ticketTotal: true
-  });
-  res.status(200).send(data);
-})
+  app.post("/ticket/buy" , async function (req, res) {
+    let amount = req.body.amount
+    let buyer = req.body.buyer
+
+    console.log('buyticket')
+    let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
+    console.log('response', response)
+
+    let data = ({
+      ticketTotal: true
+    });
+    res.status(200).send(data);
+  })
 
 
-app.get("/ticket/:account", async function (req, res) {
-  console.log('buyticket')
-  let account = req.params.account
-  let response = await metaTicketContract.getTicketsByOwner.call(account, {from: account, gas:3000000});
-  console.log('response', response)
-  console.log('data', response[0][0]);
+  app.get("/ticket/:account", async function (req, res) {
+    console.log('buyticket')
+    let account = req.params.account
+    let response = await metaTicketContract.getTicketsByOwner.call(account, {from: account, gas:3000000});
+    console.log('response', response)
+    console.log('data', response[0][0]);
 
-  let data = ({
-    ownerTicket: response[1],
-    prices: response[0],
-    totalTicket: response[1],
-    ownerName: response[2],
-    ownerTelephone: response[3]
-  });
-  res.status(200).send(data);
-})
+    let data = ({
+      prices: response[0],
+      ownerTicket: response[1],
+      ownerName: response[2],
+      ownerTelephone: response[3]
+    });
+    res.status(200).send(data);
+  })
 
-app.get("/setTicket/:account", async function (req, res) {
-  console.log('setTicket')
-  let account = req.params.account
-  let response = await metaTicketContract.setPriceTicketsByOwner(2, {from: account, gas:3000000});
+  app.get("/setTicket/:account", async function (req, res) {
+    console.log('setTicket')
+    let account = req.params.account
+    let response = await metaTicketContract.setPriceTicketsByOwner(2, {from: account, gas:3000000});
 
-  let data = ({
-    success: true
-  });
-  res.status(200).send(data);
-})
+    let data = ({
+      success: true
+    });
+    res.status(200).send(data);
+  })
 
-app.get("/buyTicketFactory", async function (req, res) {
-  let response = await metaTicketContract.buyTicket('0xd32007f413c51ac3b89174e891fbf82a1f4fbeb5', 2,
-  {from: '0x678a3318ad85eca4fd82135312a45c81fd69cfa7', value: web3.utils.toWei('2', 'ether'), gas:3000000});
+  app.get("/buyTicketFactory", async function (req, res) {
+    let response = await metaTicketContract.buyTicket('0xd32007f413c51ac3b89174e891fbf82a1f4fbeb5', 2,
+    {from: '0x678a3318ad85eca4fd82135312a45c81fd69cfa7', value: web3.utils.toWei('2', 'ether'), gas:3000000});
 
-  let data = ({
-    success: true
-  });
-  res.status(200).send(data);
-})
+    let data = ({
+      success: true
+    });
+    res.status(200).send(data);
+  })
 }
 
 module.exports = appRouter;

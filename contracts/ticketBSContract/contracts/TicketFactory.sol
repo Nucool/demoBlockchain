@@ -1,11 +1,11 @@
-pragma solidity 0.4.21;
+pragma solidity ^0.4.21;
 import "./ERC20.sol";
 import "./Ownable.sol";
 import "./SafeMath.sol";
 
 
 contract MemberInterface {
-  function getMemberInternal(address _address) external view returns (string name, string telephone);
+  function getMemberInternal(address _address) external view returns (bytes32 name, bytes32 telephone);
 }
 
 contract TicketFactory is Ownable {
@@ -32,7 +32,7 @@ contract TicketFactory is Ownable {
     _;
   }
 
-  function TicketFactory() {
+  function TicketFactory() public {
     symbol = "TK";
     name = "Ticket";
 
@@ -56,19 +56,19 @@ contract TicketFactory is Ownable {
     _setPriceTicketByOwner(msg.sender, _price);
   }
 
-  function getTicketsByOwner(address _owner) view returns(uint[] prices,uint totalTicket, string ownerName, string ownerTelephone) {
-    uint[] memory result = new uint[](ownerTicketCount[_owner]);
-    uint counter = 0;
+  function getTicketsByOwner(address _owner) view public returns(uint prices,uint totalTicket, string ownerName, string ownerTelephone) {
+    uint price = 0;
     for (uint i = 0; i < tickets.length; i++) {
       if (ticketToOwner[i] == _owner) {
-        result[counter] = tickets[i].price;
-        counter++;
+        price = tickets[i].price;
+        break;
       }
     }
 
-    string memberName;
-    (memberName, ) = memberContract.getMemberInternal(_owner);
-    return (result, ownerTicketCount[_owner], "", "");
+    bytes32 memberName;
+    bytes32 memberTelephone;
+    (memberName, memberTelephone) = memberContract.getMemberInternal(_owner);
+    return (price, ownerTicketCount[_owner], bytes32ToString(memberName), bytes32ToString(memberTelephone));
   }
 
   function _buyTicket(address _ownerTicket, address _newOwnerTicket, uint _amount) private {
@@ -88,9 +88,8 @@ contract TicketFactory is Ownable {
   }
 
   function buyTicket(address _ownerTicket, uint _amount) public payable {
-    uint[] memory prices = new uint[](ownerTicketCount[_ownerTicket]);
     uint totalTicket;
-    (prices,totalTicket,,) = getTicketsByOwner(_ownerTicket);
+    (,totalTicket,,) = getTicketsByOwner(_ownerTicket);
     require(totalTicket > 0);
 
     return _buyTicket(_ownerTicket, msg.sender, _amount);
@@ -100,5 +99,22 @@ contract TicketFactory is Ownable {
   function setMemberContractAddress(address _address) public {
     memberContract = MemberInterface(_address);
   }
+
+  function bytes32ToString(bytes32 x) public pure returns (string) {
+    bytes memory bytesString = new bytes(32);
+    uint charCount = 0;
+    for (uint j = 0; j < 32; j++) {
+        byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
+        if (char != 0) {
+            bytesString[charCount] = char;
+            charCount++;
+        }
+    }
+    bytes memory bytesStringTrimmed = new bytes(charCount);
+    for (j = 0; j < charCount; j++) {
+        bytesStringTrimmed[j] = bytesString[j];
+    }
+    return string(bytesStringTrimmed);
+}
 
 }

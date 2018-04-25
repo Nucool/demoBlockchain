@@ -3,6 +3,7 @@ import axios from 'axios';
 import AccountList from './components/AccountList.js';
 import AccountTransfer from './components/AccountTransfer.js';
 import Ticket from './components/Ticket.js';
+import CreateAccount from './components/CreateAccount.js';
 import './App.css';
 
 let apiDomain = 'http://localhost:3009'
@@ -25,7 +26,13 @@ class App extends Component {
         buyer: '',
         amount: 0,
         isSending: false
-      }
+      },
+      createAccount: {
+        name: '',
+        telephone: '',
+        isSending: false
+      },
+      page: ''
     }
     this.handleSelectAccount = this.handleSelectAccount.bind(this)
     this.handleTransferETH = this.handleTransferETH.bind(this)
@@ -36,6 +43,9 @@ class App extends Component {
     this.handleIsSendingTransfer = this.handleIsSendingTransfer.bind(this)
     this.handleIsSendingBuyTicket = this.handleIsSendingBuyTicket.bind(this)
     this.handleCreateAccount = this.handleCreateAccount.bind(this)
+    this.handleInputAccountNameChange = this.handleInputAccountNameChange.bind(this)
+    this.handleInputAccountTelephoneChange = this.handleInputAccountTelephoneChange.bind(this)
+    this.handleIsSendingCreateAccount = this.handleIsSendingCreateAccount.bind(this)
   }
 
   fetchData(sendTransaction) {
@@ -46,16 +56,16 @@ class App extends Component {
         accounts: accounts,
       });
       /*axios.get(`${apiDomain}/ticket`).then(response => {
-        let ticketTotal = response.data.ticketTotal
-        this.setState({
-          accounts: accounts,
-          ticketRemain: ticketTotal,
-          sendTransaction: Object.assign({}, this.state.sendTransaction, {
-            to: '',
-            eth: '',
-            isSending: false
-          }),
-        })
+      let ticketTotal = response.data.ticketTotal
+      this.setState({
+      accounts: accounts,
+      ticketRemain: ticketTotal,
+      sendTransaction: Object.assign({}, this.state.sendTransaction, {
+      to: '',
+      eth: '',
+      isSending: false
+      }),
+      })
       })*/
     })
   }
@@ -80,7 +90,8 @@ class App extends Component {
           ownerTicket: response.data.ownerTicket,
           buyer: account.address,
           amount: 0
-        }
+        },
+        page: ''
       })
     })
   }
@@ -147,10 +158,52 @@ class App extends Component {
     })
   }
 
-  handleCreateAccount(){
-    axios.post(`${apiDomain}/account/create`)
+  handleGoToPageCreateAccount() {
+    this.setState({
+      page: 'createAccount'
+    })
+  }
+
+
+  handleInputAccountNameChange(e) {
+    this.setState({
+      createAccount: Object.assign({}, this.state.createAccount, {
+        name: e.target.value
+      })
+    })
+  }
+
+  handleInputAccountTelephoneChange(e) {
+    this.setState({
+      createAccount: Object.assign({}, this.state.createAccount, {
+        telephone: e.target.value
+      })
+    })
+  }
+
+  handleIsSendingCreateAccount(isSending) {
+    this.setState({
+      createAccount: Object.assign({}, this.state.createAccount, {
+        isSending: isSending
+      })
+    })
+  }
+
+
+  handleCreateAccount(data){
+    console.log('handleCreateAccount', data)
+    this.handleIsSendingCreateAccount(true);
+    axios.post(`${apiDomain}/account/create`, data)
     .then(response => {
       console.log('response',response)
+      this.handleIsSendingCreateAccount(false);
+      this.setState({
+        createAccount: {
+          name: '',
+          telephone: '',
+          isSending: false
+        }
+      })
       this.fetchData(this.state.sendTransaction)
     })
   }
@@ -162,7 +215,7 @@ class App extends Component {
           <div className="App-title">
             Demo Wallet
             <button type="button" className="btn btn-primary" style={{marginLeft:'15px'}}
-              onClick={()=>{this.handleCreateAccount()}}
+              onClick={()=>{this.handleGoToPageCreateAccount()}}
               >
               <span className="glyphicon glyphicon-plus-sign"></span> Create Account
               </button>
@@ -173,15 +226,15 @@ class App extends Component {
               accounts={this.state.accounts}
               onSelectAccount={this.handleSelectAccount} />
 
-            <div className="main">
+            <div className="main" style={{display: this.state.page === '' ? 'block': 'none'}}>
               <AccountTransfer
                 account={this.state.accountTransfer}
                 accounts={this.state.accounts}
                 sendTransaction={this.state.sendTransaction}
                 onHandleInputETHTransferChange={this.handleInputETHTransferChange}
                 onHandleInputAddressTransferChange={this.handleInputAddressTransferChange}
-                onHandleTransferETH={this.handleTransferETH} />
-
+                onHandleTransferETH={this.handleTransferETH}
+                />
               {
                 this.state.accountTransfer !== null ?
                 <Ticket
@@ -192,7 +245,15 @@ class App extends Component {
                   onHandleBuyTicket={this.handleBuyTicket}
                   /> : null
                 }
+              </div>
 
+              <div className="main" style={{display: this.state.page === 'createAccount' ? 'block': 'none'}}>
+                <CreateAccount
+                  createAccount={this.state.createAccount}
+                  onHandleInputAccountNameChange={this.handleInputAccountNameChange}
+                  onHandleInputAccountTelephoneChange={this.handleInputAccountTelephoneChange}
+                  onHandleCreateAccount={this.handleCreateAccount}
+                  />
               </div>
             </div>
             <footer className="App-footer text-muted">
@@ -202,5 +263,4 @@ class App extends Component {
         );
       }
     }
-
     export default App;

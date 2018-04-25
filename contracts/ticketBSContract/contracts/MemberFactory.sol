@@ -1,4 +1,4 @@
-pragma solidity 0.4.21;
+pragma solidity ^0.4.21;
 
 contract MemberFactory {
 
@@ -24,13 +24,21 @@ contract MemberFactory {
     return (members[_address].name, members[_address].telephone);
   }
 
-  function getMemberInternal(address _address) external view returns (string name, string telephone) {
+  function getMemberInternal(address _address) external view returns (bytes32 name, bytes32 telephone) {
     Member memory member = members[_address];
-    return (member.name, member.telephone);
+    bytes32 _name = stringToBytes32(member.name);
+    bytes32 _telephone = stringToBytes32(member.telephone);
+    return (_name, _telephone);
   }
 
   function createMember(string _name, string _telephone, address _address) public {
     _createMember(_name, _telephone, _address);
+  }
+
+  function stringToBytes32(string memory source) public pure returns (bytes32 result) {
+    assembly {
+      result := mload(add(source, 32))
+    }
   }
 
 }

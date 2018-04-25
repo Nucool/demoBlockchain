@@ -1,6 +1,7 @@
 import React from 'react'
 
 const Ticket = (props) => {
+  console.log('ticket', props)
   const { buyTicket } = props
   return (
     <div className="mainRow" >
