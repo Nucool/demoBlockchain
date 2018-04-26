@@ -4,7 +4,7 @@ const ticket_artifacts = require('../../../contracts/ticketContract/build/contra
 const member_artifacts = require('../../../contracts/ticketBSContract/build/contracts/MemberFactory.json')
 const ticketBS_artifacts = require('../../../contracts/ticketBSContract/build/contracts/TicketFactory.json')
 
-const isTestRPC = true;
+const isTestRPC = false;
 
 
 let web3 = new Web3()
@@ -168,43 +168,6 @@ var appRouter = function (app) {
 
     res.status(200).send(data);
   })
-
-  app.get("/ticket", async function (req, res) {
-    let ticketTotal = await metaContract.getTicketsTotal.call({from: account})
-    console.log('await', ticketTotal)
-
-    let data = ({
-      ticketTotal: ticketTotal
-    });
-
-    res.status(200).send(data);
-  })
-
-  app.get("/buyticket" , async function (req, res) {
-    console.log('buyticket')
-    let response = await metaContract.buyTickets(1, {from: '0x50dfe168c2679c443d4efd9856068dcc489d5310', value: web3.utils.toWei('1', 'ether')})
-    console.log('response', response)
-
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
-
-  app.post("/ticket/buy" , async function (req, res) {
-    let amount = req.body.amount
-    let buyer = req.body.buyer
-
-    console.log('buyticket')
-    let response = await metaContract.buyTickets(amount, {from: buyer, value: web3.utils.toWei(amount, 'ether')})
-    console.log('response', response)
-
-    let data = ({
-      ticketTotal: true
-    });
-    res.status(200).send(data);
-  })
-
 
   app.get("/ticket/:account", async function (req, res) {
     console.log('buyticket')

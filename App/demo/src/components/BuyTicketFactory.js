@@ -22,7 +22,15 @@ const BuyTicketFactory = (props) => {
 
             </div>
           </div>
+          <div className="form-group">
+            <label className="control-label col-sm-3" >Owner Ticket Telephone :</label>
+            <div className="col-sm-9">
+              <input type="text" className="form-control" placeholder="Telephone Number"
+                disabled={true}
+                value={ownerTicketInfo !== null ? ownerTicketInfo.ownerTelephone : ''} />
 
+            </div>
+          </div>
           <div className="form-group">
             <label className="control-label col-sm-3" >Owner Ticket Total :</label>
             <div className="col-sm-9">
