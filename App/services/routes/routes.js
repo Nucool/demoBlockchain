@@ -1,27 +1,16 @@
 const Web3 = require('web3')
 const contracttruff = require('truffle-contract')
-const ticket_artifacts = require('../../../contracts/ticketContract/build/contracts/Ticket.json')
 const member_artifacts = require('../../../contracts/ticketBSContract/build/contracts/MemberFactory.json')
 const ticketBS_artifacts = require('../../../contracts/ticketBSContract/build/contracts/TicketFactory.json')
 
-const isTestRPC = false;
+const isTestRPC = true;
 
 
 let web3 = new Web3()
 web3.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-var contract = contracttruff(ticket_artifacts);
 var contractTicket = contracttruff(ticketBS_artifacts);
 var contractMember = contracttruff(member_artifacts);
-
-contract.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
-if (typeof contract.currentProvider.sendAsync !== "function") {
-  contract.currentProvider.sendAsync = function() {
-    return contract.currentProvider.send.apply(
-      contract.currentProvider, arguments
-    );
-  };
-}
 
 contractTicket.setProvider(new Web3.providers.HttpProvider("http://localhost:8545"));
 if (typeof contractTicket.currentProvider.sendAsync !== "function") {
