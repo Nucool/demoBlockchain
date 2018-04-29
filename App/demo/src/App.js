@@ -323,7 +323,7 @@ class App extends Component {
             <button type="button" className="btn btn-primary" style={{marginLeft:'15px'}}
               onClick={()=>{this.handleGoToPageCreateAccount()}}
               >
-              <span className="glyphicon glyphicon-plus-sign"></span> Create Account
+               Create Account
               </button>
             </div>
           </header>
